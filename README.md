@@ -47,8 +47,3 @@ Generated files are written under `output/`:
 - `output/drafts/v2_three_column_draft.png`
 - `output/figures/v3_main_heatmap.png`
 
-## Notes for Submission
-
-- Repository visibility is currently set to private for coursework integrity.
-- If your course requires a public URL, visibility can be switched later without changing commit history.
-
