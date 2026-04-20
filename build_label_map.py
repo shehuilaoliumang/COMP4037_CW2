@@ -6,7 +6,6 @@ _OUT_DIR = os.path.join(_THIS_DIR, 'output', 'data')
 os.makedirs(_OUT_DIR, exist_ok=True)
 
 LABEL_MAP = [
-    # Code        Short label                               Rationale (why the short label is faithful — no narrowing)
     ('A00-A09',   'Intestinal infections',                  'Shortened equivalent of "intestinal infectious diseases" — same scope.'),
     ('A92-A99',   'Vector-borne viral fevers',              '"Vector-borne" is the standard public-health synonym for arthropod-borne (mosquitoes, ticks, lice, fleas). Same scope.'),
     ('C81-C96',   'Lymphoid & blood-forming cancers',       'Covers the same scope as the ICD category (lymphomas, leukaemias, myeloma).'),
@@ -48,7 +47,6 @@ LABEL_MAP = [
 
 df = pd.DataFrame(LABEL_MAP, columns=['Code', 'Short_Label', 'Rationale'])
 
-# Merge with original descriptions from the shortlist for side-by-side view
 sl = pd.read_csv(os.path.join(_OUT_DIR, 'shortlist_final.csv'))
 merged = df.merge(sl[['Code', 'Chapter_Num', 'Chapter_Name', 'Description']],
                   on='Code', how='left')
@@ -65,7 +63,6 @@ print(f"✅ Saved label map: {len(merged)} rows")
 print(f"  {out_csv}")
 print(f"  {out_xlsx}")
 
-# Console preview
 print("\n" + "=" * 118)
 print(f"{'Code':<10} | {'Original ICD-10':<52} | {'Short label (figure)':<40}")
 print("-" * 118)

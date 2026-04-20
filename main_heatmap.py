@@ -18,10 +18,10 @@ os.makedirs(_OUT_DIR, exist_ok=True)
 # ============ Load ============
 long_df = pd.read_pickle(_PKL)
 shortlist = pd.read_csv(_SHORTLIST)
-label_map = pd.read_csv(_LABEL_MAP)   # ICD short-label lookup (see Data Preparation)
+label_map = pd.read_csv(_LABEL_MAP)   # Short labels for the figure y-axis
 row_codes = shortlist['Code'].tolist()
 
-# Build the Code → short-label dictionary used for figure y-axis
+# Map ICD codes to short labels for the figure
 short_label_lookup = dict(zip(label_map['ICD_Code'], label_map['Short_Label']))
 
 pivot = long_df.pivot_table(index='Code', columns='Year', values='Admissions', aggfunc='first')
@@ -38,9 +38,8 @@ recovery = pct_change(pivot['2022-23'].values, pivot['2020-21'].values)
 legacy   = pct_change(pivot['2023-24'].values, pivot['2019-20'].values)
 matrix   = np.vstack([shock, recovery, legacy]).T   # shape (37, 3)
 
-# ============ Paletton-derived palette ============
-# Diverging scale anchored at PURE WHITE so it stands out from the warm beige page.
-# (Earlier versions reused the page beige as the heatmap centre — too camouflaged.)
+# ============ Colour palette ============
+# Diverging scale with a white midpoint for contrast against the page background.
 PAL_DEEP_RED   = '#7A2E2E'    # strong drop    (Lockdown damage)
 PAL_MID_RED    = '#C25F52'
 PAL_LIGHT_RED  = '#EBC5BE'
@@ -49,8 +48,8 @@ PAL_LIGHT_BLUE = '#B9CAD9'
 PAL_MID_BLUE   = '#567299'
 PAL_DEEP_BLUE  = '#2E4A7A'    # strong rise
 
-# Page background is warm and slightly darker, so chart floats on it
-PAGE_BG        = '#EDE4D6'    # slightly darker beige → clearer figure/ground contrast
+# Page background uses a warm beige tone.
+PAGE_BG        = '#EDE4D6'
 
 diverging = LinearSegmentedColormap.from_list(
     'paletton_div',
@@ -61,8 +60,7 @@ diverging = LinearSegmentedColormap.from_list(
 )
 diverging.set_bad(color='#c2c2c2')   # slightly darker grey for missing — visible on white
 
-# Chapter band colours (muted so they frame, don't compete)
-# Each hue picks up a secondary tone from the same Paletton harmony
+# Chapter band colours
 CHAPTER_COLOURS = {
     'I':    '#B99B7D',   # warm sand       Infectious
     'II':   '#A68A6C',   # camel           Neoplasms
@@ -86,8 +84,7 @@ CHAPTER_COLOURS = {
 }
 
 # ============ Typography ============
-# Use high-quality serif display + clean sans body — avoids generic AI look.
-# Fall back gracefully if fonts missing on the user's system.
+# Use a reliable sans-serif fallback across systems.
 plt.rcParams.update({
     'font.family':    ['DejaVu Sans'],   # safe cross-platform fallback
     'font.size':      9,
@@ -248,19 +245,6 @@ for i, flag in enumerate(tiny_basis):
         for ax in panel_axes:
             ax.plot(0, i, marker='x', markersize=5, color='#666666',
                     markeredgewidth=0.8, alpha=0.55, clip_on=False)
-
-# ============ Key-finding annotations (Step 4b) ============
-# We selectively call out a small number of cells with annotation bubbles
-# pointing to the insights most worth reading. Keeping the count low (2 now,
-# may grow to 4-5 if visual density allows) to avoid clutter.
-#
-# Placement strategy:
-#   - Annotations for rows NEAR THE TOP of the figure → put bubble to the
-#     upper-right, using the left or right of the heatmap cluster as space.
-#   - For bottom rows → lower-right space.
-#   - Use `figure.transFigure` for the bubble position so we aren't at the
-#     mercy of the data coordinate system (each panel has x-range [-0.5, 0.5]
-#     which is too narrow for meaningful offsets).
 
 annotations = [
     {

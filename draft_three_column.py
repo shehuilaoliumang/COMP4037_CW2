@@ -17,17 +17,17 @@ os.makedirs(_OUT_DIR, exist_ok=True)
 long_df = pd.read_pickle(_PKL)
 shortlist = pd.read_csv(_SHORTLIST)
 
-# Preserve the shortlist's chapter-ordered sequence (37 rows)
+# Keep the shortlist's chapter order (37 rows)
 row_codes = shortlist['Code'].tolist()
 
-# Pivot to Code × Year wide table for easy subtraction
+# Pivot to a Code × Year table for subtraction
 pivot = long_df.pivot_table(index='Code', columns='Year', values='Admissions', aggfunc='first')
 
-# Restrict to our 37 rows in the correct order
+# Keep the 37 rows in the shortlist order
 pivot = pivot.loc[row_codes]
 
 # ============ Compute the three panels ============
-# Use a small helper to avoid division-by-zero issues
+# Helper to avoid division-by-zero issues
 def pct_change(new, base):
     """(new - base) / base * 100, returning NaN where base is NaN/0."""
     with np.errstate(divide='ignore', invalid='ignore'):
@@ -47,7 +47,7 @@ panel_legacy = pd.Series(
     index=pivot.index, name='LEGACY'
 )
 
-# Combine into a single DataFrame where each column is one panel
+# Combine into a single DataFrame with one column per panel
 matrix_df = pd.concat([panel_shock, panel_recovery, panel_legacy], axis=1)
 
 print("Matrix preview (first rows):")
@@ -67,7 +67,7 @@ def shorten(desc, n=42):
 row_labels = [f"{c}  —  {shorten(desc_map.get(c, ''))}" for c in row_codes]
 
 # ============ Plot three side-by-side heatmaps ============
-# Clip extreme values so U00-U49's +1748% doesn't destroy the colour scale
+# Clip extreme values so the colour scale stays readable
 CLIP = 100  # show anything beyond ±100% as the same extreme colour
 
 matrix = matrix_df.values.astype(float)
@@ -106,8 +106,7 @@ for i, ax in enumerate(axes):
         interpolation='nearest',
     )
     ax.set_title(panel_titles[i], fontsize=10)
-    ax.set_xticks([])  # no x-ticks — each panel is a single column
-    # Thin borders on each cell for readability
+    ax.set_xticks([])
     ax.set_yticks(range(len(row_codes)))
 
 # Y-labels only on the first axis
@@ -131,7 +130,7 @@ cbar = fig.colorbar(
 cbar.set_label(f'% change  (clipped at ±{CLIP}%)', fontsize=9)
 cbar.ax.tick_params(labelsize=8)
 
-# Grey legend patch (for the missing-data note)
+# Grey legend patch for missing data
 grey_patch = mpatches.Patch(color='#cccccc', label='Missing data in source')
 fig.legend(
     handles=[grey_patch],

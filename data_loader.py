@@ -7,7 +7,7 @@ warnings.filterwarnings('ignore')
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_ROOT = os.path.join(_THIS_DIR, 'nhs_data')
 
-# Output directory tree — auto-created on first run
+# Output directories are created on first run
 OUTPUT_ROOT = os.path.join(_THIS_DIR, 'output')
 OUTPUT_DATA_DIR    = os.path.join(OUTPUT_ROOT, 'data')
 OUTPUT_FIGURES_DIR = os.path.join(OUTPUT_ROOT, 'figures')
@@ -27,7 +27,7 @@ FILES = {
     '2023-24': 'hosp-epis-stat-admi-diag-2023-24-tab.xlsx',
 }
 
-# 23 age groups available in new-format files (2012-2024)
+# Age groups in the source files
 AGE_COLUMNS = [
     'Age 0', 'Age 1-4', 'Age 5-9', 'Age 10-14',
     'Age 15', 'Age 16', 'Age 17', 'Age 18', 'Age 19',
@@ -37,8 +37,7 @@ AGE_COLUMNS = [
     'Age 80-84', 'Age 85-89', 'Age 90+'
 ]
 
-# ICD-10 Chapter mapping (grouped by first letter of code)
-# This gives us the hierarchical structure for treemap/heatmap grouping
+# ICD-10 chapter mapping
 ICD10_CHAPTERS = {
     'A': ('I',    'Infectious & parasitic diseases'),
     'B': ('I',    'Infectious & parasitic diseases'),
@@ -89,7 +88,7 @@ def _normalize_columns(columns):
     cleaned = []
     for c in columns:
         s = str(c).replace('\n', ' ').strip()
-        # Remove trailing (FAE) / (FCE) / (Days) / (Years) markers
+            # Remove trailing (FAE) / (FCE) / (Days) / (Years) markers
         for suffix in ['(FAE)', '(FCE)', '(Days)', '(Years)']:
             s = s.replace(suffix, '').strip()
         # Collapse multiple spaces
@@ -143,7 +142,7 @@ def load_year(year_label, filepath):
     """
     full_path = os.path.join(DATA_ROOT, filepath) if not os.path.isabs(filepath) else filepath
 
-    # Locate the Primary Diagnosis Summary sheet
+    # Find the Primary Diagnosis Summary sheet
     xl = pd.ExcelFile(full_path)
     target_sheet = None
     for s in xl.sheet_names:
@@ -165,10 +164,7 @@ def load_year(year_label, filepath):
     df = pd.read_excel(full_path, sheet_name=target_sheet, header=header_row)
     df.columns = _normalize_columns(df.columns)
 
-    # 2023-24 file has duplicate names (e.g. two 'Emergency' columns — one for
-    # admission method, one for bed-days). pandas suffixes duplicates as '.1';
-    # we drop the '.1' versions so that the FIRST occurrence (= admission method
-    # count) is used, matching earlier years' semantics.
+    # Drop duplicate .1 columns so the first occurrence is kept.
     keep_mask = [not str(c).endswith('.1') for c in df.columns]
     df = df.loc[:, keep_mask]
 
@@ -185,12 +181,12 @@ def load_year(year_label, filepath):
     # Extract ICD code (e.g. "A00-A09" or "U00-U49")
     df['Code'] = df['Code_Desc'].str.extract(r'^([A-Z]\d+-[A-Z]?\d+|[A-Z]\d+)')
 
-    # Extract human-readable description (strip code prefix)
+    # Extract human-readable description
     df['Description'] = df['Code_Desc'].str.replace(
         r'^[A-Z]\d+-[A-Z]?\d+\s*|^[A-Z]\d+\s*', '', regex=True
     ).str.strip()
 
-    # Keep only rows with valid ICD codes (drops Totals, blanks, footnotes)
+    # Keep only rows with valid ICD codes
     df = df[df['Code'].notna()].reset_index(drop=True)
 
     # Map to ICD chapter
@@ -256,10 +252,7 @@ if __name__ == '__main__':
     # Make sure output/ tree exists
     ensure_output_dirs()
 
-    # Save in three formats — each serves a different purpose:
-    #   .pkl  — fastest to reload in Python, preserves exact dtypes
-    #   .csv  — human-readable, openable in Excel / Notepad / any text editor
-    #   .xlsx — native Excel format, best for quick visual inspection
+    # Save in three formats.
     pkl_path  = os.path.join(OUTPUT_DATA_DIR, 'long_df.pkl')
     csv_path  = os.path.join(OUTPUT_DATA_DIR, 'long_df.csv')
     xlsx_path = os.path.join(OUTPUT_DATA_DIR, 'long_df.xlsx')

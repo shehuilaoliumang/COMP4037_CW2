@@ -31,10 +31,10 @@ pivot['baseline']      = pivot['2019-20']
 pivot['pct_lockdown']  = (pivot['2020-21'] - pivot['2019-20']) / pivot['2019-20'] * 100
 pivot['pct_long_term'] = (pivot['2023-24'] - pivot['2019-20']) / pivot['2019-20'] * 100
 
-# Keep candidates with usable baseline
+# Keep rows with a usable baseline
 pool = pivot[pivot['baseline'].notna() & (pivot['baseline'] > 0)].copy()
 
-# ============ Story-critical whitelist ============
+# ============ Whitelist ============
 WHITELIST = {
     'F50-F59': 'Eating disorders — teenage doubling',
     'U00-U49': 'COVID-19 codes — pandemic marker',
@@ -56,7 +56,7 @@ for chap_num, chap_df in pool.groupby('Chapter_Num'):
     reasons = {}
     chap_df = chap_df.copy()
 
-    # Priority 1: whitelist hits inside this chapter
+    # Priority 1: keep whitelisted codes in this chapter
     for _, r in chap_df.iterrows():
         if r['Code'] in WHITELIST:
             selected_codes.append(r['Code'])
@@ -64,7 +64,7 @@ for chap_num, chap_df in pool.groupby('Chapter_Num'):
         if len(selected_codes) >= MAX_PER_CHAPTER:
             break
 
-    # Priority 2: chapter's largest volume
+    # Priority 2: choose the largest baseline in the chapter
     if len(selected_codes) < MAX_PER_CHAPTER:
         by_vol = chap_df.sort_values('baseline', ascending=False)
         for _, r in by_vol.iterrows():
@@ -73,7 +73,7 @@ for chap_num, chap_df in pool.groupby('Chapter_Num'):
                 reasons[r['Code']] = 'Largest volume in chapter'
                 break
 
-    # Priority 3: biggest absolute Lockdown shock
+    # Priority 3: choose the largest lockdown change
     if len(selected_codes) < MAX_PER_CHAPTER:
         chap_df['_abs_lock'] = chap_df['pct_lockdown'].abs()
         by_shock = chap_df.sort_values('_abs_lock', ascending=False, na_position='last')
@@ -90,7 +90,7 @@ for chap_num, chap_df in pool.groupby('Chapter_Num'):
 
 shortlist = pd.DataFrame(keep_rows)
 
-# ============ Sort by Chapter, then by volume ============
+# ============ Sort by chapter, then by volume ============
 _roman_order = {
     'I': 1, 'II': 2, 'IV': 4, 'V': 5, 'VI': 6, 'VII': 7, 'IX': 9,
     'X': 10, 'XI': 11, 'XII': 12, 'XIII': 13, 'XIV': 14, 'XV': 15,
